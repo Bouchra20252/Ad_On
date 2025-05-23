@@ -1,0 +1,211 @@
+{% extends 'petites_annonces/base.html' %}
+{% load static %}
+
+{% block title %}Résultats de recherche - Petites Annonces{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Search sidebar -->
+        <div class="col-md-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Filtres</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'search' %}">
+                        <!-- Keep the search query -->
+                        <input type="hidden" name="q" value="{{ request.GET.q }}">
+                        
+                        <!-- Categories -->
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">Catégorie</label>
+                            {{ form.category }}
+                        </div>
+                        
+                        <!-- Price range -->
+                        <div class="mb-3">
+                            <label class="form-label">Prix</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Min</span>
+                                        <input type="number" name="min_price" class="form-control" value="{{ request.GET.min_price }}" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Max</span>
+                                        <input type="number" name="max_price" class="form-control" value="{{ request.GET.max_price }}" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="id_location" class="form-label">Localisation</label>
+                            <input type="text" name="location" id="id_location" class="form-control" placeholder="Ville, département..." value="{{ request.GET.location }}">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Filtrer
+                        </button>
+                    </form>
+                    
+                    <!-- Save Search -->
+                    {% if user.is_authenticated %}
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+                                <i class="fas fa-save me-2"></i>Sauvegarder cette recherche
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search results -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h4">Résultats de recherche{% if query %} pour "{{ query }}"{% endif %}</h1>
+                <div class="d-flex align-items-center">
+                    <span class="me-2">{{ count }} résultat{{ count|pluralize }}</span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Trier par
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                            <li><a class="dropdown-item {% if sort == 'recent' %}active{% endif %}" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}sort=recent">Plus récentes</a></li>
+                            <li><a class="dropdown-item {% if sort == 'price_low' %}active{% endif %}" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}sort=price_low">Prix croissant</a></li>
+                            <li><a class="dropdown-item {% if sort == 'price_high' %}active{% endif %}" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}sort=price_high">Prix décroissant</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            {% if ads %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for ad in ads %}
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm">
+                                {% if ad.images.exists %}
+                                    {% with ad.images.first as image %}
+                                        <img src="{{ image.image.url }}" class="card-img-top" alt="{{ ad.title }}" style="height: 180px; object-fit: cover;">
+                                    {% endwith %}
+                                {% else %}
+                                    <div class="bg-light text-center py-5" style="height: 180px;">
+                                        <i class="fas fa-image fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-secondary">{{ ad.category.name }}</span>
+                                        {% if ad.is_premium %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star me-1"></i>Premium
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <h5 class="card-title">{{ ad.title }}</h5>
+                                    <p class="card-text text-primary fw-bold">{{ ad.price }} €{% if ad.negotiable %} <small class="text-muted">(Négociable)</small>{% endif %}</p>
+                                    <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i>{{ ad.location }}</p>
+                                </div>
+                                <div class="card-footer bg-white border-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ ad.posted_date|date:"d/m/Y" }}</small>
+                                        <a href="{% url 'ad-detail' ad.slug %}" class="btn btn-sm btn-outline-primary">Voir détails</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if ads.has_other_pages %}
+                    <nav class="mt-4" aria-label="Search results pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if ads.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ ads.previous_page_number }}">Précédent</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Précédent</span>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in ads.paginator.page_range %}
+                                {% if ads.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > ads.number|add:'-3' and num < ads.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if ads.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ ads.next_page_number }}">Suivant</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Suivant</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Aucune annonce ne correspond à votre recherche.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Save Search Modal -->
+{% if user.is_authenticated %}
+    <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="saveSearchModalLabel">Sauvegarder cette recherche</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'save-search' %}">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <input type="hidden" name="query" value="{{ query }}">
+                        <input type="hidden" name="category" value="{{ request.GET.category }}">
+                        <input type="hidden" name="min_price" value="{{ request.GET.min_price }}">
+                        <input type="hidden" name="max_price" value="{{ request.GET.max_price }}">
+                        <input type="hidden" name="location" value="{{ request.GET.location }}">
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Nom de la recherche</label>
+                            <input type="text" name="name" id="id_name" class="form-control" required placeholder="Ex: Appartements à Paris">
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="send_notifications" id="id_send_notifications">
+                            <label class="form-check-label" for="id_send_notifications">
+                                M'alerter des nouvelles annonces correspondant à ces critères
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Sauvegarder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,59 @@
+{% extends 'petites_annonces/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Messagerie - Petites Annonces{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Messagerie</h1>
+    
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if conversations %}
+                <div class="list-group list-group-flush">
+                    {% for conversation in conversations %}
+                        {% with other_user=conversation.participants.all|exclude_user:request.user|first %}
+                            <a href="{% url 'conversation-detail' conversation.id %}" class="list-group-item list-group-item-action p-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-7">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ other_user.profile.image.url }}" alt="{{ other_user.username }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <div>
+                                                <h5 class="mb-1">{{ other_user.get_full_name|default:other_user.username }}</h5>
+                                                {% if conversation.advertisement %}
+                                                    <p class="text-muted mb-0">
+                                                        À propos de: <span class="text-primary">{{ conversation.advertisement.title }}</span>
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <p class="text-muted mb-0">
+                                            <i class="far fa-clock me-1"></i>{{ conversation.updated_at|date:"d/m/Y H:i" }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        {% with unread_count=conversation|unread_messages_count:request.user %}
+                                            {% if unread_count > 0 %}
+                                                <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </a>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center p-5">
+                    <i class="far fa-comment-dots fa-4x text-muted mb-3"></i>
+                    <h4>Aucun message</h4>
+                    <p class="text-muted">Vous n'avez pas encore de conversation.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,122 @@
+{% extends 'petites_annonces/base.html' %}
+{% load static %}
+
+{% block title %}Annonces de {{ profile_user.username }} - Petites Annonces{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-header mb-4 p-4 bg-white shadow-sm rounded">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                <img src="{{ profile_user.profile.image.url }}" alt="{{ profile_user.username }}" class="profile-image mb-3">
+            </div>
+            <div class="col-md-6">
+                <h2 class="mb-1">{{ profile_user.get_full_name|default:profile_user.username }}</h2>
+                <p class="text-muted mb-2">
+                    <i class="fas fa-user me-2"></i>{{ profile_user.username }}
+                    {% if profile_user.profile.city %}
+                        <span class="ms-3"><i class="fas fa-map-marker-alt me-2"></i>{{ profile_user.profile.city }}</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0">
+                    <span class="badge bg-primary">
+                        <i class="fas fa-star me-1"></i>{{ profile_user.profile.reputation_score|floatformat:1 }}/5.0
+                    </span>
+                    <span class="badge bg-secondary ms-2">Membre depuis {{ profile_user.date_joined|date:"F Y" }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if user.is_authenticated and user != profile_user %}
+                    <a href="{% url 'new-message' profile_user.id %}" class="btn btn-primary">
+                        <i class="fas fa-envelope me-2"></i>Contacter
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <h3 class="mb-4">Annonces de {{ profile_user.username }} ({{ ad_count }})</h3>
+    
+    {% if ads %}
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for ad in ads %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm">
+                        {% if ad.images.exists %}
+                            {% with ad.images.first as image %}
+                                <img src="{{ image.image.url }}" class="card-img-top" alt="{{ ad.title }}" style="height: 180px; object-fit: cover;">
+                            {% endwith %}
+                        {% else %}
+                            <div class="bg-light text-center py-5" style="height: 180px;">
+                                <i class="fas fa-image fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge bg-secondary">{{ ad.category.name }}</span>
+                                {% if ad.is_premium %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-star me-1"></i>Premium
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <h5 class="card-title">{{ ad.title }}</h5>
+                            <p class="card-text text-primary fw-bold">{{ ad.price }} €{% if ad.negotiable %} <small class="text-muted">(Négociable)</small>{% endif %}</p>
+                            <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i>{{ ad.location }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ ad.posted_date|date:"d/m/Y" }}</small>
+                                <a href="{% url 'ad-detail' ad.slug %}" class="btn btn-sm btn-outline-primary">Voir détails</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if ads.has_other_pages %}
+            <nav class="mt-4" aria-label="User ads pagination">
+                <ul class="pagination justify-content-center">
+                    {% if ads.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ ads.previous_page_number }}">Précédent</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Précédent</span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in ads.paginator.page_range %}
+                        {% if ads.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > ads.number|add:'-3' and num < ads.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if ads.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ ads.next_page_number }}">Suivant</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Suivant</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>{{ profile_user.username }} n'a pas encore publié d'annonces.
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

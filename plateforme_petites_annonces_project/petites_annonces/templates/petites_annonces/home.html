@@ -1,0 +1,186 @@
+{% extends 'petites_annonces/base.html' %}
+{% load static %}
+
+{% block title %}Petites Annonces - Achetez et vendez en toute simplicité{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero bg-light rounded-3 p-4 mb-5">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h1 class="display-5 fw-bold mb-4">Achetez et vendez en toute simplicité</h1>
+            <p class="lead mb-4">Trouvez ce que vous cherchez ou vendez ce dont vous n'avez plus besoin sur notre plateforme de petites annonces.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <a href="{% url 'ad-create' %}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    <i class="fas fa-plus-circle me-2"></i>Déposer une annonce
+                </a>
+                <a href="{% url 'categories' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-search me-2"></i>Explorer
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6 text-center">
+            <img src="{% static 'img/hero-image.svg' %}" alt="Hero Image" class="img-fluid" style="max-height: 300px;">
+        </div>
+    </div>
+</section>
+
+<!-- Search Bar -->
+<section class="search-section bg-primary text-white rounded-3 p-4 mb-5">
+    <h2 class="text-center mb-4">Rechercher une annonce</h2>
+    <form action="{% url 'search' %}" method="get">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control form-control-lg" placeholder="Que recherchez-vous ?" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-3">
+                {{ search_form.category }}
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="location" class="form-control form-control-lg" placeholder="Localisation" value="{{ request.GET.location }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-light btn-lg w-100">
+                    <i class="fas fa-search me-2"></i>Rechercher
+                </button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Categories Section -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Catégories populaires</h2>
+        <a href="{% url 'categories' %}" class="btn btn-outline-primary">Voir toutes les catégories</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        {% for category in categories %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="{{ category.icon|default:'fas fa-tag' }} fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">{{ category.name }}</h5>
+                    <p class="card-text text-muted">{{ category.ad_count }} annonce{{ category.ad_count|pluralize }}</p>
+                    <a href="{% url 'category-detail' category.slug %}" class="stretched-link"></a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>Aucune catégorie disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Premium Ads Section -->
+{% if premium_ads %}
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Annonces en vedette</h2>
+        <a href="{% url 'search' %}?is_premium=1" class="text-decoration-none">Voir plus</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for ad in premium_ads %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm position-relative">
+                {% if ad.images.exists %}
+                    {% with ad.images.first as image %}
+                    <img src="{{ image.image.url }}" class="card-img-top" alt="{{ ad.title }}" style="height: 200px; object-fit: cover;">
+                    {% endwith %}
+                {% else %}
+                    <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="No image available" style="height: 200px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="badge bg-primary">{{ ad.category.name }}</span>
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-star me-1"></i>Premium
+                        </span>
+                    </div>
+                    <h5 class="card-title">{{ ad.title }}</h5>
+                    <p class="card-text text-primary fw-bold">{{ ad.price }} €{% if ad.negotiable %} <small class="text-muted">(Négociable)</small>{% endif %}</p>
+                    <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i>{{ ad.location }}</p>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="far fa-clock me-1"></i>{{ ad.posted_date|date:"d/m/Y" }}
+                        </small>
+                        <a href="{% url 'ad-detail' ad.slug %}" class="btn btn-sm btn-outline-primary">Voir l'annonce</a>
+                    </div>
+                </div>
+                <a href="{% url 'ad-detail' ad.slug %}" class="stretched-link"></a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Recent Ads Section -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Annonces récentes</h2>
+        <a href="{% url 'search' %}?sort=recent" class="text-decoration-none">Voir plus</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for ad in recent_ads %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                {% if ad.images.exists %}
+                    {% with ad.images.first as image %}
+                    <img src="{{ image.image.url }}" class="card-img-top" alt="{{ ad.title }}" style="height: 180px; object-fit: cover;">
+                    {% endwith %}
+                {% else %}
+                    <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="No image available" style="height: 180px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <span class="badge bg-secondary mb-2">{{ ad.category.name }}</span>
+                    <h5 class="card-title text-truncate">{{ ad.title }}</h5>
+                    <p class="card-text text-primary fw-bold">{{ ad.price }} €</p>
+                    <p class="card-text small"><i class="fas fa-map-marker-alt me-1"></i>{{ ad.location }}</p>
+                </div>
+                <div class="card-footer bg-white border-0">
+                    <small class="text-muted">{{ ad.posted_date|date:"d/m/Y" }}</small>
+                </div>
+                <a href="{% url 'ad-detail' ad.slug %}" class="stretched-link"></a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <p>Aucune annonce disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="mb-5 bg-light rounded-3 p-4">
+    <h2 class="text-center mb-5">Comment ça marche</h2>
+    <div class="row text-center">
+        <div class="col-md-4 mb-4 mb-md-0">
+            <div class="bg-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                <i class="fas fa-user-plus fa-3x text-primary"></i>
+            </div>
+            <h4>1. Créez votre compte</h4>
+            <p>Inscrivez-vous gratuitement en quelques secondes pour pouvoir publier vos annonces.</p>
+        </div>
+        <div class="col-md-4 mb-4 mb-md-0">
+            <div class="bg-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                <i class="fas fa-edit fa-3x text-primary"></i>
+            </div>
+            <h4>2. Publiez vos annonces</h4>
+            <p>Créez des annonces avec photos, descriptions détaillées et informations de contact.</p>
+        </div>
+        <div class="col-md-4">
+            <div class="bg-white rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                <i class="fas fa-comments fa-3x text-primary"></i>
+            </div>
+            <h4>3. Communiquez</h4>
+            <p>Échangez avec les acheteurs ou vendeurs via notre système de messagerie sécurisé.</p>
+        </div>
+    </div>
+</section>
+{% endblock %} 
